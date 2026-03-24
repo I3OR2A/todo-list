@@ -1,98 +1,55 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Redirect } from 'expo-router';
+import { useSQLiteContext } from 'expo-sqlite';
+import React, { useCallback, useEffect, useState } from 'react';
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { ErrorStateScreen } from '@/components/app/error-state-screen';
+import { LoadingScreen } from '@/components/app/loading-screen';
+import { prepareAppLaunch } from '@/modules/app/usecases/prepare-app-launch';
 
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
+type StartupRoute = '/onboarding' | '/(tabs)/home';
+
+export default function AppEntryScreen() {
+  const database = useSQLiteContext();
+  const [targetRoute, setTargetRoute] = useState<StartupRoute | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadStartupRoute = useCallback(async () => {
+    try {
+      setError(null);
+      setTargetRoute(null);
+
+      const settings = await prepareAppLaunch(database);
+      setTargetRoute(settings.onboardingCompleted ? '/(tabs)/home' : '/onboarding');
+    } catch (startupError) {
+      const message =
+        startupError instanceof Error ? startupError.message : 'Failed to prepare app launch.';
+      setError(message);
+    }
+  }, [database]);
+
+  useEffect(() => {
+    loadStartupRoute();
+  }, [loadStartupRoute]);
+
+  if (error) {
     return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
+      <ErrorStateScreen
+        title="Unable to start the app"
+        message={error}
+        retryLabel="Retry launch"
+        onRetry={loadStartupRoute}
+      />
     );
   }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
-  return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
-  );
+
+  if (!targetRoute) {
+    return (
+      <LoadingScreen
+        title="Preparing Cute Todo App"
+        message="Loading local settings, cleanup jobs, and startup state."
+      />
+    );
+  }
+
+  return <Redirect href={targetRoute} />;
 }
-
-export default function HomeScreen() {
-  return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
-
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
-
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
-          />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
-
-        {Platform.OS === 'web' && <WebBadge />}
-      </SafeAreaView>
-    </ThemedView>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    flexDirection: 'row',
-  },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
-  },
-  heroSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
-  },
-  title: {
-    textAlign: 'center',
-  },
-  code: {
-    textTransform: 'uppercase',
-  },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
-  },
-});

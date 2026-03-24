@@ -1,4 +1,6 @@
-import { Platform, StyleSheet, Text, type TextProps } from 'react-native';
+import React from 'react';
+import { Platform, StyleSheet, type TextProps } from 'react-native';
+import { Text as PaperText } from 'react-native-paper';
 
 import { Fonts, ThemeColor } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -8,11 +10,26 @@ export type ThemedTextProps = TextProps & {
   themeColor?: ThemeColor;
 };
 
-export function ThemedText({ style, type = 'default', themeColor, ...rest }: ThemedTextProps) {
+export function ThemedText({
+  children,
+  style,
+  type = 'default',
+  themeColor,
+  ...rest
+}: ThemedTextProps) {
   const theme = useTheme();
+  const variant =
+    type === 'title'
+      ? 'headlineLarge'
+      : type === 'subtitle'
+        ? 'headlineSmall'
+        : type === 'small' || type === 'smallBold' || type === 'code'
+          ? 'bodyMedium'
+          : 'bodyLarge';
 
   return (
-    <Text
+    <PaperText
+      variant={variant}
       style={[
         { color: theme[themeColor ?? 'text'] },
         type === 'default' && styles.default,
@@ -26,7 +43,9 @@ export function ThemedText({ style, type = 'default', themeColor, ...rest }: The
         style,
       ]}
       {...rest}
-    />
+    >
+      {children ?? null}
+    </PaperText>
   );
 }
 

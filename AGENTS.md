@@ -58,6 +58,9 @@ Use the following skills when applicable:
 - For comparing implementation against specifications, read:
   - `skills/spec-review/SKILL.md`
 
+- For generating Medium article drafts from PRD/SRS, read:
+  - `skills/prd-srs-to-medium/SKILL.md`
+
 When a task clearly matches one of these categories, apply the relevant skill workflow before acting.
 
 ---

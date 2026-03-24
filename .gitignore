@@ -3,6 +3,7 @@
 # document
 docs/
 .codex/
+AGENTS.md
 
 # dependencies
 node_modules/
